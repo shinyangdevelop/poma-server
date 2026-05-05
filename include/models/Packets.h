@@ -1,0 +1,27 @@
+#pragma once
+
+#pragma pack(push, 1)
+
+enum class PACKET_ID : short {
+    NONE = 0,
+    USER_LOGIN_REQ = 21,
+    USER_LOGIN_RES = 22,
+
+    MAX = 256,
+};
+
+struct PktHeader {
+    short TotalSize;
+    short Id;
+    unsigned char Reserve;
+};
+
+constexpr int MAX_USER_ID_SIZE = 16;
+constexpr int MAX_USER_PASSWORD_SIZE = 16;
+
+struct PktLoginReq {
+    char szID[MAX_USER_ID_SIZE] = {0, };
+    char szPW[MAX_USER_PASSWORD_SIZE] = {0, };
+};
+
+#pragma pack(pop)
