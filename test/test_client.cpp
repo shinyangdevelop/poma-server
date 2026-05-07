@@ -17,11 +17,11 @@ int main() {
 
         // 2. Prepare the Packet Body
         PktLoginReq loginBody;
-        std::strncpy(loginBody.szID, "admin_cpp", MAX_USER_ID_SIZE);
-        std::strncpy(loginBody.szPW, "supersecret", MAX_USER_PASSWORD_SIZE);
+        std::strncpy(loginBody.szID, "admin", MAX_USER_ID_SIZE);
+        std::strncpy(loginBody.szPW, "secret", MAX_USER_PASSWORD_SIZE);
 
         // 3. Prepare the Packet Header
-        PktHeader header;
+        PktHeader header{};
         header.TotalSize = sizeof(PktHeader) + sizeof(PktLoginReq);
         header.Id = (short)PACKET_ID::USER_LOGIN_REQ;
         header.Reserve = 0;

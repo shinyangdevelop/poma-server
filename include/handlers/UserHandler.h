@@ -1,15 +1,19 @@
 #pragma once
 #include <string>
 
+#include "database/DatabaseManager.h"
+#include "models/Packets.h"
+
 namespace handlers {
     class UserHandler {
     public:
-        UserHandler();
-        virtual ~UserHandler() = default;
+        explicit UserHandler(db::DatabaseManager *pDatabaseManager);
 
-        std::string processRequest(const std::string& requestData);
+        static std::string ProcessRequest(const std::string& requestData);
+        bool ProcessLogin(const PktLoginReq& requestData) const;
 
     private:
-        bool validateUser(const std::string& data);
+        bool ValidateUser(const std::string &ID, const std::string &PW) const;
+        db::DatabaseManager *m_pRefDbManager;
     };
 }

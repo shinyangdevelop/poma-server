@@ -1,26 +1,33 @@
 #include "handlers/UserHandler.h"
 #include <iostream>
+#include "database/DatabaseManager.h"
 
 namespace handlers {
 
-    UserHandler::UserHandler() {
+    UserHandler::UserHandler(db::DatabaseManager *pDatabaseManager) {
         std::cout << "UserHandler initialized.\n";
+        m_pRefDbManager = pDatabaseManager;
     }
 
-    std::string UserHandler::processRequest(const std::string& requestData) {
+    std::string UserHandler::ProcessRequest(const std::string& requestData) {
         std::cout << "UserHandler processing: " << requestData << "\n";
+        return requestData;
+    }
 
-        if (validateUser(requestData)) {
-            return "SUCCESS: User validated\n";
-        } else {
-            return "ERROR: Invalid user data\n";
+    bool UserHandler::ProcessLogin(const PktLoginReq &reqPkt) const {
+        if (!ValidateUser(reqPkt.szID, reqPkt.szPW)) {
+            return false;
         }
+        return true;
     }
 
     // Private method implementation
-    bool UserHandler::validateUser(const std::string& data) {
-        // Dummy logic: assume valid if the string isn't empty
-        return !data.empty() && data[0] != '1';
+    bool UserHandler::ValidateUser(const string& ID, const string& PW) const {
+        const std::string sql = "SELECT * FROM users WHERE loginid=$1 AND password=$2;";
+        const pqxx::result res = m_pRefDbManager->Query(sql, ID, PW);
+        if (res.empty()) {
+            return false;
+        }
+        return true;
     }
-
 } // namespace handlers

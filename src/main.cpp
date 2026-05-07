@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+#include <cstdlib>
 #include "models/Packets.h"
 #include "handlers/PacketProcess.h"
 
@@ -10,7 +11,9 @@ using boost::asio::ip::tcp;
 // Handles a single client connection
 class Session : public std::enable_shared_from_this<Session> {
 public:
-    Session(tcp::socket socket) : socket_(std::move(socket)) {}
+    Session(tcp::socket socket, db::DatabaseManager* m_pRefDbManager) : socket_(std::move(socket)) {
+        processor_.Init(m_pRefDbManager);
+    }
 
     void start() {
         do_read_header();
@@ -24,9 +27,6 @@ private:
             [this, self](boost::system::error_code ec, std::size_t length) {
                 if (!ec) {
                     do_read_body();
-                }
-                else {
-                    std::cout << "Clinet Disconnected.";
                 }
             });
     }
@@ -56,8 +56,8 @@ private:
 // Listens for new connections and creates Sessions
 class Server {
 public:
-    Server(boost::asio::io_context& io_context, short port)
-        : acceptor_(io_context, tcp::endpoint(tcp::v4(), port)) {
+    Server(boost::asio::io_context& io_context, short port, db::DatabaseManager* dbManager)
+        : acceptor_(io_context, tcp::endpoint(tcp::v4(), port)), dbManager_(dbManager) {
         do_accept();
     }
 
@@ -66,20 +66,28 @@ private:
         acceptor_.async_accept(
             [this](boost::system::error_code ec, tcp::socket socket) {
                 if (!ec) {
-                    std::cout << "New client connected!\n";
-                    std::make_shared<Session>(std::move(socket))->start();
+                    std::make_shared<Session>(std::move(socket), dbManager_)->start();
                 }
                 do_accept(); // Keep listening for more clients
             });
     }
 
     tcp::acceptor acceptor_;
+    db::DatabaseManager* dbManager_;
 };
 
 int main() {
     try {
+        db::DatabaseManager dbManager;
+        const std::string dbUrl = std::getenv("DB_URL");
+        if (!dbManager.Connect(dbUrl)) {
+            std::cerr << "Failed to connect to database!\n";
+            return -1;
+        }
+
         boost::asio::io_context io_context;
-        Server server(io_context, 8080);
+        const std::string serverPort = std::getenv("SERVER_PORT");
+        Server server(io_context, (short)stoi(serverPort), &dbManager);
 
         std::cout << "Boost Async TCP Server running on port 8080...\n";
         io_context.run(); // This blocks and runs the event loop
