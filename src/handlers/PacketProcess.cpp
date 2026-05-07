@@ -4,12 +4,15 @@
 #include "handlers/UserHandler.h"
 
 namespace handlers {
-    void PacketProcess::Process(short packetId, const char* pBodyData) {
+    void PacketProcess::Process(short packetId, const char *pBodyData, size_t bodySize, int sessionIndex) const {
         switch (packetId) {
-            case (short)PACKET_ID::USER_LOGIN_REQ: {
+            case (short) PACKET_ID::USER_LOGIN_REQ: {
+                if (bodySize < sizeof(PktLoginReq)) {
+                    std::cerr << "[Security] Client " << sessionIndex << " sent a malformed LOGIN_REQ. Dropping.\n";
+                    return;
+                }
                 const auto reqPkt = reinterpret_cast<const PktLoginReq *>(pBodyData);
-                 const UserHandler userHandler(m_pRefDbManager);
-                cout << userHandler.ProcessLogin(*reqPkt) << '\n';
+                std::cout << m_pUserHandler -> ProcessLogin(*reqPkt, sessionIndex) << '\n';
                 break;
             }
             default: {
@@ -19,7 +22,9 @@ namespace handlers {
         }
     }
 
-    void PacketProcess::Init(db::DatabaseManager *pDbManager) {
+    void PacketProcess::Init(db::DatabaseManager *pDbManager, core::UserManager *pUserManager) {
         m_pRefDbManager = pDbManager;
+        m_pUserManager = pUserManager;
+        m_pUserHandler = std::make_unique<UserHandler>(m_pRefDbManager, m_pUserManager);
     }
 }
