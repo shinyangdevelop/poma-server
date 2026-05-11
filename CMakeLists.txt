@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(GameServer)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 1. Tell Boost we are targeting Windows 10/11
@@ -15,6 +15,7 @@ pkg_check_modules(PQXX REQUIRED libpqxx)
 
 add_executable(GameServer src/main.cpp
         src/handlers/UserHandler.cpp
+        src/core/UserManager.cpp
         src/database/DatabaseManager.cpp
         src/handlers/PacketProcess.cpp
 )

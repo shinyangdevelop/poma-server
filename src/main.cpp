@@ -29,6 +29,20 @@ public:
         do_read_header();
     }
 
+    void SendPacket(std::vector<char> sendBuffer) {
+        auto self(shared_from_this());
+
+        auto bufferPtr = std::make_shared<std::vector<char>>(std::move(sendBuffer));
+        boost::asio::async_write(socket_,
+            boost::asio::buffer(bufferPtr -> data(), bufferPtr -> size()),
+            [this, self, bufferPtr](const boost::system::error_code &ec, std::size_t length) {
+                if (ec) {
+                    std::cerr << "[Session] Write failed for client " << sessionIndex_ << "\n";
+                }
+            }
+            );
+    }
+
 private:
     void do_read_header() {
         auto self(shared_from_this());
@@ -57,9 +71,12 @@ private:
 
         boost::asio::async_read(socket_,
                                 boost::asio::buffer(body_buffer_.data(), body_size),
-                                [this, self](boost::system::error_code ec, std::size_t length) {
+                                [this, self](const boost::system::error_code &ec, std::size_t length) {
                                     if (!ec) {
-                                        processor_.Process(header_.Id, body_buffer_.data(), length, sessionIndex_);
+                                        processor_.Process(header_.Id, body_buffer_.data(), length, sessionIndex_,
+                                            [this](std::vector<char> ongoingBytes) {
+                                                this -> SendPacket(std::move(ongoingBytes));
+                                            });
                                         do_read_header();
                                     } else {
                                         std::cout << "[Session] Client " << sessionIndex_ << " disconnected during body read.\n";
@@ -87,7 +104,7 @@ public:
 private:
     void do_accept() {
         acceptor_.async_accept(
-            [this](boost::system::error_code ec, tcp::socket socket) {
+            [this](const boost::system::error_code &ec, tcp::socket socket) {
                 if (!ec) {
                     std::make_shared<Session>(std::move(socket), dbManager_, userManager_)->start();
                 }
@@ -117,7 +134,7 @@ int main() {
         }
 
         boost::asio::io_context io_context;
-        Server server(io_context, static_cast<short>(stoi(serverPort)), &dbManager, &userManager);
+        Server server(io_context, static_cast<short>(stoi(std::string(serverPort))), &dbManager, &userManager);
 
         std::cout << "Boost Async TCP Server running on port 8080...\n";
         io_context.run(); // This blocks and runs the event loop

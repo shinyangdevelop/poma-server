@@ -1,6 +1,8 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <cstring>
+
+// Adjust this path if your models folder is located differently relative to the test file
 #include "models/Packets.h"
 
 using boost::asio::ip::tcp;
@@ -8,39 +10,66 @@ using boost::asio::ip::tcp;
 int main() {
     try {
         boost::asio::io_context io_context;
+
+        // 1. Resolve and connect to the local server
+        tcp::resolver resolver(io_context);
+        auto endpoints = resolver.resolve("127.0.0.1", "8080");
+
         tcp::socket socket(io_context);
+        boost::asio::connect(socket, endpoints);
+        std::cout << "Connected to the server!\n";
 
-        // 1. Connect to the local server
-        std::cout << "Connecting to 127.0.0.1:8080...\n";
-        socket.connect(tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), 8080));
-        std::cout << "Connected!\n";
+        // 2. Prepare the Login Request Body
+        PktLoginReq reqBody;
+        // strncpy cleanly copies the string and ensures the rest of the 16 bytes are null-padded
+        std::strncpy(reqBody.szID, "admin", sizeof(reqBody.szID) - 1);
+        std::strncpy(reqBody.szPW, "secret", sizeof(reqBody.szPW) - 1);
 
-        // 2. Prepare the Packet Body
-        PktLoginReq loginBody;
-        std::strncpy(loginBody.szID, "admin", MAX_USER_ID_SIZE);
-        std::strncpy(loginBody.szPW, "secret", MAX_USER_PASSWORD_SIZE);
+        // 3. Prepare the Header
+        PktHeader reqHeader;
+        reqHeader.TotalSize = sizeof(PktHeader) + sizeof(PktLoginReq);
+        reqHeader.Id = static_cast<uint16_t>(PACKET_ID::USER_LOGIN_REQ);
+        reqHeader.Reserve = 0;
 
-        // 3. Prepare the Packet Header
-        PktHeader header{};
-        header.TotalSize = sizeof(PktHeader) + sizeof(PktLoginReq);
-        header.Id = (short)PACKET_ID::USER_LOGIN_REQ;
-        header.Reserve = 0;
+        // 4. Send the Header and Body
+        // Synchronous write will block until all bytes are pushed to the network
+        boost::asio::write(socket, boost::asio::buffer(&reqHeader, sizeof(PktHeader)));
+        boost::asio::write(socket, boost::asio::buffer(&reqBody, sizeof(PktLoginReq)));
 
-        // 4. Send the data using Scatter-Gather I/O
-        // This takes our two structs and sends them back-to-back as one byte stream
-        std::array<boost::asio::const_buffer, 2> buffers = {
-            boost::asio::buffer(&header, sizeof(header)),
-            boost::asio::buffer(&loginBody, sizeof(loginBody))
-        };
+        std::cout << "-> Sent USER_LOGIN_REQ (" << reqHeader.TotalSize << " bytes) for user '" << "admin" << "'" << "\n";
 
-        boost::asio::write(socket, buffers);
-        std::cout << "LOGIN_IN_REQ packet sent successfully! (" << header.TotalSize << " bytes)\n";
+        // 5. Read the Response Header
+        PktHeader resHeader;
+        boost::asio::read(socket, boost::asio::buffer(&resHeader, sizeof(PktHeader)));
 
-        // (Optional) If you want to wait for a response from the server,
-        // you would read it here before closing the socket.
+        // 6. Check the ID and Read the Response Body
+        if (resHeader.Id == static_cast<uint16_t>(PACKET_ID::USER_LOGIN_RES)) {
+            PktLoginRes resBody;
+            boost::asio::read(socket, boost::asio::buffer(&resBody, sizeof(PktLoginRes)));
 
+            std::cout << "<- Received USER_LOGIN_RES (" << resHeader.TotalSize << " bytes)\n";
+            std::cout << "------------------------------\n";
+
+            // Cast the enum to an int just so std::cout can print it as a number
+            int statusCode = static_cast<int>(resBody.Status);
+            std::cout << "Status: " << statusCode;
+
+            if (resBody.Status == models::ErrorCode::SUCCESS) {
+                std::cout << " (SUCCESS)\n";
+                std::cout << "Coins : " << resBody.currentCoins << "\n";
+                std::cout << "Level : " << resBody.currentLevel << "\n";
+            } else {
+                std::cout << " (FAILED)\n";
+            }
+            std::cout << "------------------------------\n";
+        } else {
+            std::cout << "Received unexpected packet ID: " << resHeader.Id << "\n";
+        }
+
+        // Socket closes automatically when it goes out of scope
     } catch (std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
+        std::cerr << "Network Exception: " << e.what() << "\n";
     }
+
     return 0;
 }

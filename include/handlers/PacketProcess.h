@@ -10,7 +10,7 @@ namespace handlers {
     class PacketProcess {
     public:
         void Init(db::DatabaseManager* pDbManager, core::UserManager *pUserManager);
-        void Process(short packetId, const char* pBodyData, size_t bodySize, int sessionIndex) const;
+        void Process(short packetId, const char* pBodyData, size_t bodySize, int sessionIndex, std::function<void(std::vector<char>)> sendCallback) const;
     private:
         db::DatabaseManager* m_pRefDbManager;
         core::UserManager* m_pUserManager;

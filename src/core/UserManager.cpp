@@ -50,14 +50,4 @@ namespace core {
         }
         return false;
     }
-
-    PlayerProfile *UserManager::GetUser(int sessionIndex) {
-        std::lock_guard<std::mutex> lock(m_userMutex);
-
-        auto it = m_activeUsers.find(sessionIndex);
-        if (it != m_activeUsers.end()) {
-            return (&it->second);
-        }
-        return nullptr;
-    }
 }

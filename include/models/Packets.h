@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#include "Statuses.h"
+
 #pragma pack(push, 1)
 
 enum class PACKET_ID : uint16_t {
@@ -12,8 +14,8 @@ enum class PACKET_ID : uint16_t {
 };
 
 struct PktHeader {
+    short Id;
     uint16_t TotalSize;
-    uint16_t Id;
     uint8_t Reserve;
 };
 
@@ -26,9 +28,9 @@ struct PktLoginReq {
 };
 
 struct PktLoginRes {
-    bool IsSuccess = false;
+    models::ErrorCode Status = models::ErrorCode::INVALID_CREDENTIALS;
     int currentCoins = 0;
     int currentLevel = 0;
-}
+};
 
 #pragma pack(pop)
