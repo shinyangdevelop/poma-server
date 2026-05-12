@@ -18,6 +18,7 @@ add_executable(GameServer src/main.cpp
         src/core/UserManager.cpp
         src/database/DatabaseManager.cpp
         src/handlers/PacketProcess.cpp
+        src/game/Mahjong.cpp
 )
 
 add_executable(Test test/test_client.cpp)
