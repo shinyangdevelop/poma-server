@@ -2,7 +2,6 @@
 #include <boost/asio.hpp>
 #include <cstring>
 
-// Adjust this path if your models folder is located differently relative to the test file
 #include "models/Packets.h"
 
 using boost::asio::ip::tcp;

@@ -10,6 +10,9 @@ enum class PACKET_ID : uint16_t {
     USER_LOGIN_REQ = 21,
     USER_LOGIN_RES = 22,
 
+    QUEUE_JOIN_REQ = 31,
+    MATCH_FOUND_RES = 32,
+
     MAX = 256,
 };
 
@@ -31,6 +34,15 @@ struct PktLoginRes {
     models::ErrorCode Status = models::ErrorCode::INVALID_CREDENTIALS;
     int currentCoins = 0;
     int currentLevel = 0;
+    int accountId = -1;
+};
+
+struct PktQueueJoinReq {
+    int userId = 0;
+};
+
+struct PktMatchFoundRes {
+    int roomId;
 };
 
 #pragma pack(pop)

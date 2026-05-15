@@ -19,9 +19,13 @@ add_executable(GameServer src/main.cpp
         src/database/DatabaseManager.cpp
         src/handlers/PacketProcess.cpp
         src/game/Mahjong.cpp
+        src/core/Matchmaker.cpp
+        src/handlers/RoomHandler.cpp
 )
 
-add_executable(Test test/test_client.cpp)
+add_executable(TestClient test/test_client.cpp)
+
+add_executable(TestMatchmaker test/test_matchmaker.cpp)
 
 include_directories(include)
 
@@ -35,7 +39,12 @@ if (WIN32)
             wsock32     # Windows Sockets
             ${PQXX_LIBRARIES}
     )
-    target_link_libraries(Test PRIVATE
+    target_link_libraries(TestClient PRIVATE
+            Boost::system
+            ws2_32
+            wsock32
+    )
+    target_link_libraries(TestMatchmaker PRIVATE
             Boost::system
             ws2_32
             wsock32
@@ -43,5 +52,6 @@ if (WIN32)
 else ()
     # Just in case you ever move this code to Linux/macOS
     target_link_libraries(GameServer PRIVATE Boost::system ${PQXX_LIBRARIES})
-    target_link_libraries(Test PRIVATE Boost::system)
+    target_link_libraries(TestClient PRIVATE Boost::system)
+    target_link_libraries(TestMatchmaker PRIVATE Boost::system)
 endif ()

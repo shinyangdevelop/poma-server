@@ -12,7 +12,7 @@ namespace game {
             deadWall_.push_back(wall_[i]);
             wall_.pop_back();
         }
-        for (int i = 0; i < 14; i++) {
+        for (int i = 0; i < 4; i++) {
             for (int t = 0; t < 13; t++) {
                 players_[i].closedHand.push_back(wall_.back());
                 wall_.pop_back();
